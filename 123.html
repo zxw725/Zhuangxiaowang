@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<title>1222</title>
+	<script src="./script/jquery3.5.1.js"></script>
+</head>
+<style type="text/css">
+	#videoPlayer {
+		position: relative;
+		width: 720px;
+		height: 400px;
+		margin: 0 auto;
+		background-color: #000;
+		color: #fff;
+		font-family: Arial, sans-serif;
+	}
+
+	#videoPlayer video {
+		width: 100%;
+		height: 100%;
+		object-fit: fill;
+	}
+
+	#videoControls {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		width: 100%;
+		background-color: rgba(0, 0, 0, 0.7);
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 5px 10px;
+		box-sizing: border-box;
+		flex-wrap: wrap;
+	}
+
+	#videoControls button {
+		background-color: transparent;
+		color: #fff;
+		border: none;
+		cursor: pointer;
+		font-size: 16px;
+		padding: 0 10px;
+	}
+
+	#videoControls button:hover {
+		color: #00bfff;
+	}
+
+	#videoControls input[type=range] {
+		height: 6px;
+		background-color: #777;
+		appearance: none;
+		outline: none;
+		border-radius: 3px;
+		margin: 0 5px;
+	}
+
+	#currentTime,
+	#duration {
+		font-size: 14px;
+	}
+
+	#fullscreenBtn {
+		font-size: 16px;
+		background-color: transparent;
+		color: #fff;
+		border: none;
+		cursor: pointer;
+	}
+
+	#seekBar,
+	.line,
+	.progress {
+		height: 6px;
+		background-color: #777;
+		appearance: none;
+		outline: none;
+		border-radius: 3px;
+		width: 100%;
+		margin: 0 5px;
+		position: absolute;
+	}
+	.progress{
+		width: 100%;
+	}
+	#volumeBar {
+		width: 43%;
+	}
+
+	* {
+		padding: 0;
+		margin: 0;
+	}
+
+	.playVideo {
+		background: url('./public/Play.png');
+
+	}
+
+	.pauseVideo {
+		background: url('./public/Pause.png');
+	}
+
+	.muteIcon {
+		background: url('./public/Mute.png');
+	}
+
+	.unmute {
+		background: url('./public/Unmute.png');
+	}
+
+	.fullScreen {
+		background: url('./public/FullScreen.png');
+		margin-left: 4%;
+	}
+
+	.exitFullScreen {
+		background: url('./public/ExitFullScreen.png');
+	}
+
+	#playPauseBtn,
+	#muteBtn,
+	#fullscreenBtn {
+		background-size: cover;
+		width: 25px;
+		height: 25px;
+	}
+
+	.muteContainer {
+		width: 28%;
+		display: flex;
+		align-items: center;
+		margin: 0 1%;
+		margin-right: 0;
+		justify-content: end;
+	}
+
+	.playContainer {
+		display: flex;
+		align-items: center;
+		width: 71%;
+		padding: 0;
+	}
+
+	#currentTime {
+		margin-left: 1%;
+	}
+
+	.seekContainer {
+		position: relative;
+		width: 92%;
+		margin-right: 2%;
+		display: flex;
+		align-items: center;
+	}
+
+	.line {
+		position: absolute;
+		width: 0%;
+		background-color: white !important;
+		z-index: 100;
+	}
+
+	.progress {
+		position: absolute;
+		opacity: 0;
+		z-index: 101;
+	}
+	.mute{
+		width: 4%;
+		margin-right: 14%;
+
+	}
+	.duration{
+		position: absolute;
+		right: 0;
+	}
+</style>
+
+<body>
+	<div id="videoPlayer">
+		<video src="./public/1.mp4"></video>
+		<div id="videoControls">
+			<div class="playContainer">
+				<div id="playPauseBtn" class="playVideo"></div>
+				<span id="currentTime">0:00</span>
+				<div class="seekContainer">
+					<div class="line"></div>
+					<div id="seekBar"></div>
+					<input type="range" class="progress" value="0" max="100" step="0.01" min="0" value="0"
+						onchange="changeProgress(value)">
+				</div>
+				<span id="duration">0:00</span>
+			</div>
+
+			<div class="muteContainer">
+				<div id="muteBtn" class="muteIcon"></div>
+				<input type="range" id="volumeBar" min="0" max="100" value="50" step="1" onchange="changeMute(value)">
+				<span class="mute">50%</span>
+				<div id="fullscreenBtn" class="fullScreen"></div>
+			</div>
+
+		</div>
+	</div>
+
+	<script type="text/javascript">
+		var videoPlayer = document.getElementById("videoPlayer");
+		var video = videoPlayer.querySelector("video");
+		var playPauseBtn = document.getElementById("playPauseBtn");
+		var seekBar = document.getElementById("seekBar");
+		var currentTime = document.getElementById("currentTime");
+		var duration = document.getElementById("duration");
+		var muteBtn = document.getElementById("muteBtn");
+		var volumeBar = document.getElementById("volumeBar");
+		var fullscreenBtn = document.getElementById("fullscreenBtn");
+		var videoControls = document.getElementById("videoControls");
+		var mute = document.querySelector(".mute");
+		var line = document.querySelector(".line");
+		var progress = document.querySelector(".progress");
+		// $("#videoPlayer").mouseover(function (){
+		//     videoControls.style.display="flex"
+		// }).mouseout(function(){
+		//     var timer=setInterval(()=>{
+		// 		clearInterval(timer)
+		// 		videoControls.style.display="none"
+		// 	},1000)
+		// })
+
+
+		// 监听键盘按键事件 13==回车 32==空格
+		document.addEventListener("keydown",keydown);
+		function keydown(event){
+			if(event.keyCode==32||event.keyCode==13){
+				togglePlayPause();
+			}
+		}
+
+		// 改变音量
+		function changeMute(e) {
+			mute.innerHTML = e + "%";
+			
+		}
+
+		function changeProgress(e) {
+			line.style.width = e+"%";
+			video.currentTime=video.duration*e/100;
+			var minutes = Math.floor(video.currentTime / 60);
+			var seconds = Math.floor(video.currentTime % 60);
+			if (seconds < 10) {
+				seconds = "0" + seconds;
+			}
+			currentTime.innerHTML = minutes + ":" + seconds;
+		}
+		// 播放和暂停视频
+		function togglePlayPause() {
+			if (video.paused || video.ended) {
+				video.play();
+				playPauseBtn.classList.remove("playVideo");
+				playPauseBtn.classList.add("pauseVideo");
+			} else {
+				video.pause();
+				playPauseBtn.classList.remove("pauseVideo");
+				playPauseBtn.classList.add("playVideo");
+			}
+		}
+
+		// 更新进度条和当前时间
+		function updateSeekBar() {
+			var value = (video.currentTime / video.duration) * 100;
+			line.style.width = value+"%";
+			seekBar.value = value;
+			var minutes = Math.floor(video.currentTime / 60);
+			var seconds = Math.floor(video.currentTime % 60);
+			if (seconds < 10) {
+				seconds = "0" + seconds;
+			}
+			currentTime.innerHTML = minutes + ":" + seconds;
+		}
+
+		// 更新音量条
+		function updateVolume() {
+			video.volume = volumeBar.value / 100;
+			if (video.volume == 0) {
+				muteBtn.classList.remove("muteIcon")
+				muteBtn.classList.add("unmute");
+
+			} else {
+				muteBtn.classList.remove("unmute")
+				muteBtn.classList.add("muteIcon");
+			}
+		}
+
+		// 全屏
+		function toggleFullscreen() {
+			if (document.fullscreenElement) {
+				document.exitFullscreen();
+				fullscreenBtn.classList.remove("exitFullScreen")
+				fullscreenBtn.classList.add("fullScreen");
+			} else {
+				videoPlayer.requestFullscreen();
+				fullscreenBtn.classList.remove("fullScreen")
+				fullscreenBtn.classList.add("exitFullScreen");
+			}
+		}
+
+		// 绑定事件
+		video.addEventListener("click", togglePlayPause);
+		playPauseBtn.addEventListener("click", togglePlayPause);
+		seekBar.addEventListener("input", function () {
+			var time = (video.duration / 100) * seekBar.value;
+			video.currentTime = time;
+		});
+		video.addEventListener("timeupdate", updateSeekBar);
+		video.addEventListener("canplay", function () {
+			duration.innerHTML = Math.floor(video.duration / 60) + ":" + Math.floor(video.duration % 60);
+		});
+		muteBtn.addEventListener("click", function () {
+			if (video.volume == 0) {
+				video.volume = volumeBar.value / 100;
+				muteBtn.classList.remove("unmute")
+				muteBtn.classList.add("muteIcon");
+				volumeBar.value = video.volume * 100;
+			} else {
+				video.volume = 0;
+				muteBtn.classList.remove("muteIcon")
+				muteBtn.classList.add("unmute");
+				mute.innerHTML = "0%"
+				volumeBar.value = 0;
+			}
+		});
+		volumeBar.addEventListener("input", updateVolume);
+		fullscreenBtn.addEventListener("click", toggleFullscreen);
+	</script>
+</body>
+
+</html>
